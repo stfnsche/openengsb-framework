@@ -60,8 +60,11 @@ import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.karaf.options.KarafDistributionConfigurationFilePutOption;
+import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
+import org.ops4j.pax.exam.spi.reactors.PerClass;
 
 @RunWith(PaxExam.class)
+@ExamReactorStrategy(PerClass.class)
 public class EDBIT extends AbstractModelUsingExamTestHelper {
     private static final String CONTEXT = "testcontext";
     private EngineeringDatabaseService edbService;
@@ -71,12 +74,18 @@ public class EDBIT extends AbstractModelUsingExamTestHelper {
     @Configuration
     public static Option[] myConfiguration() throws Exception {
         Option[] options =
-            new Option[]{
+            new Option[] {
                 new KarafDistributionConfigurationFilePutOption("etc/org.openengsb.ekb.cfg",
                     "modelUpdatePropagationMode", "DEACTIVATED"),
                 new KarafDistributionConfigurationFilePutOption("etc/org.openengsb.ekb.cfg",
                     "persistInterfaceLockingMode", "DEACTIVATED"),
-                mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").versionAsInProject() };
+                mavenBundle().groupId("org.ops4j.base").artifactId("ops4j-base-io").versionAsInProject(),
+                mavenBundle().groupId("org.ops4j.base").artifactId("ops4j-base-lang").versionAsInProject(),
+                mavenBundle().groupId("org.ops4j.base").artifactId("ops4j-base-monitors").versionAsInProject(),
+                mavenBundle().groupId("org.ops4j.base").artifactId("ops4j-base-store").versionAsInProject(),
+                mavenBundle().groupId("biz.aQute.bnd").artifactId("bnd").versionAsInProject(),
+                mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").versionAsInProject()
+            };
         return combine(baseConfiguration(), options);
     }
 

@@ -51,10 +51,8 @@ import org.openengsb.core.workflow.api.RuleManager;
 import org.openengsb.core.workflow.api.model.RuleBaseElementId;
 import org.openengsb.core.workflow.api.model.RuleBaseElementType;
 import org.openengsb.core.workflow.drools.OsgiHelper;
-import org.openengsb.domain.auditing.AuditingDomain;
 import org.openengsb.domain.authentication.AuthenticationDomain;
 import org.openengsb.domain.authentication.AuthenticationException;
-import org.openengsb.domain.authorization.AuthorizationDomain;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.ProbeBuilder;
 import org.ops4j.pax.exam.TestProbeBuilder;
@@ -90,8 +88,6 @@ public abstract class AbstractExamTestHelper {
      */
 
     private static final int DEBUG_PORT = 5005;
-    private static final String LOG_LEVEL = "ERROR";
-    
     public static final long DEFAULT_TIMEOUT = 90000;
 
     @Inject
@@ -103,6 +99,16 @@ public abstract class AbstractExamTestHelper {
     public void setupFramework() throws Exception {
         waitForFrameworkToStart();
         waitForRequiredTasks();
+    }
+    
+    private void waitForFrameworkToStart() throws Exception {
+        waitForOsgiBundle("org.openengsb.domain.authentication");
+        waitForOsgiBundle("org.openengsb.domain.authorization");
+        waitForOsgiBundle("org.openengsb.connector.usernamepassword");
+        waitForOsgiBundle("org.openengsb.framework.common");
+        waitForOsgiBundle("org.openengsb.framework.util");
+        waitForOsgiBundle("org.openengsb.framework.services");
+        waitForOsgiBundle("org.openengsb.connector.memoryauditing");
     }
     
     private void waitForRequiredTasks() throws Exception {
@@ -133,21 +139,6 @@ public abstract class AbstractExamTestHelper {
                 throw new IllegalStateException("taskbox-config did not finish in time");
             }
         }
-        authenticationContext = getOsgiService(AuthenticationContext.class);
-    }
-    
-    private void waitForFrameworkToStart() throws Exception {
-        waitForOsgiBundle("org.openengsb.domain.authentication");
-        waitForOsgiBundle("org.openengsb.domain.authorization");
-        waitForOsgiBundle("org.openengsb.connector.usernamepassword");
-        waitForOsgiBundle("org.openengsb.framework.common");
-        waitForOsgiBundle("org.openengsb.framework.util");
-        waitForOsgiBundle("org.openengsb.framework.services");
-        waitForOsgiBundle("org.openengsb.connector.memoryauditing");
-        
-        queryOsgiService(AuditingDomain.class, null, 10000, true);
-        queryOsgiService(AuthenticationDomain.class, "(location.root=authentication-root)", 25000, true);
-        queryOsgiService(AuthorizationDomain.class, "(location.root=authorization-root)", 25000, true);
     }
 
     private static final Map<Integer, String> STATES = ImmutableMap.of(1, "UNINSTALLED", 2, "INSTALLED", 4, "RESOLVED",
@@ -395,9 +386,8 @@ public abstract class AbstractExamTestHelper {
         portNames.load(portsPropertiesFile);
         LOGGER.warn("running itests with the following port-config");
         LOGGER.warn(portNames.toString());
-//        LogLevel realLogLevel = transformLogLevel(loglevel);
         Option[] mainOptions =
-            new Option[]{
+            new Option[] {
                 new VMOption("-Xmx2048m"),
                 new VMOption("-XX:MaxPermSize=256m"),
                 karafDistributionConfiguration().frameworkUrl(
@@ -411,8 +401,8 @@ public abstract class AbstractExamTestHelper {
                     "openwire"), (String) portNames.get("jms.openwire.port")),
                 editConfigurationFilePut(new ConfigurationPointer("etc/org.openengsb.infrastructure.jms.cfg",
                     "stomp"), (String) portNames.get("jms.stomp.port")),
-                mavenBundle(maven().groupId("org.openengsb.wrapped").artifactId("net.sourceforge.htmlunit-all")
-                    .versionAsInProject())};
+                mavenBundle().groupId("org.openengsb.wrapped").artifactId("net.sourceforge.htmlunit-all")
+                    .versionAsInProject() };
         mainOptions = combine(mainOptions, getDefaultEDBConfiguration());
         if (debug) {
             return combine(mainOptions, debugConfiguration(debugPort, hold));
@@ -436,23 +426,6 @@ public abstract class AbstractExamTestHelper {
         Configuration configuration = cm.getConfiguration(config);
         return (String) configuration.getProperties().get(name);
     }
-
-//    private static LogLevel transformLogLevel(String logLevel) {
-//        switch (logLevel) {
-//            case "ERROR":
-//                return LogLevel.ERROR;
-//            case "WARN":
-//                return LogLevel.WARN;
-//            case "INFO":
-//                return LogLevel.INFO;
-//            case "DEBUG":
-//                return LogLevel.DEBUG;
-//            case "TRACE":
-//                return LogLevel.TRACE;
-//            default:
-//                return LogLevel.WARN;
-//        }
-//    }
 
     protected String getOsgiProjectVersion() {
         return bundleContext.getBundle().getHeaders().get("Project-Version");
